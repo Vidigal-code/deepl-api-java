@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="211b1b65-b634-4f39-854d-b23c2fa1dbd2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/DeepLPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/DeepLPlugin.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/client/DeepLClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/client/DeepLClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/client/DeepLClientImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/client/DeepLClientImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/language/LanguageRegistry.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/language/LanguageRegistry.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/utilities/cache/TranslationCache.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/utilities/cache/TranslationCache.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/utilities/config/ExponentialBackoffStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/utilities/config/ExponentialBackoffStrategy.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/utilities/ratelimit/TokenBucketRateLimiter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/java/vidigal/code/utilities/ratelimit/TokenBucketRateLimiter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/java/vidigal/code/example/DeepLPluginExample.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/java/vidigal/code/example/DeepLPluginExample.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/java/vidigal/code/test/DeepLPluginTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/java/vidigal/code/test/DeepLPluginTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/java/vidigal/code/test/client/DeepLClientImplTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/java/vidigal/code/test/client/DeepLClientImplTest.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2ySA9V5EvxI6YhU4UfU2giGxvoY" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.DeepLPlugin.executor&quot;: &quot;Run&quot;,
+    &quot;Application.DeepLPluginExample.executor&quot;: &quot;Run&quot;,
+    &quot;Application.com.java.vidigal.code.DeepLPluginExample.executor&quot;: &quot;Run&quot;,
+    &quot;Application.com.java.vidigal.code.example.DeepLPluginExample.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.DeepLClientImplTest (1).executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.DeepLClientImplTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.DeepLConfigBuilderTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.DeepLConfigBuilderTest.shouldThrowExceptionForInvalidApiUrl.executor&quot;: &quot;Debug&quot;,
+    &quot;JUnit.DeepLPluginIntegrationTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.DeepLPluginTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.LanguageRegistryTest$ApiFetchingTests.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.LanguageRegistryTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.LanguageTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.TokenBucketRateLimiterTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.TranslationCacheTest (1).executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.TranslationCacheTest.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.TranslationRequestBuilderTest.executor&quot;: &quot;Run&quot;,
+    &quot;Maven.deepl-java [test].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.deepl-simple-java [compile].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.deepl-simple-java [install].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.deepl-simple-java [test].executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_directory_selection&quot;: &quot;C:/GITHUB REPOSITORY/deepl-simple-java/src/main/java/com/java/vidigal/code&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;C:/GITHUB REPOSITORY/deepl-simple-java/src/main/java/com/java/vidigal/code/Main.java&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="com.java.vidigal.code" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Application.DeepLPluginExample">
+    <configuration name="DeepLPluginExample" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.java.vidigal.code.example.DeepLPluginExample" />
+      <module name="deepl-api-java" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.java.vidigal.code.example.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="DeepLClientImplTest (1)" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="deepl-java" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.java.vidigal.code.test.client.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.java.vidigal.code.test.client" />
+      <option name="MAIN_CLASS_NAME" value="com.java.vidigal.code.test.client.DeepLClientImplTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="DeepLPluginTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="deepl-java" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.java.vidigal.code.test.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.java.vidigal.code.test" />
+      <option name="MAIN_CLASS_NAME" value="com.java.vidigal.code.test.DeepLPluginTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="LanguageRegistryTest$ApiFetchingTests" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="deepl-java" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.java.vidigal.code.test.language.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.java.vidigal.code.test.language.LanguageRegistryTest" />
+      <option name="MAIN_CLASS_NAME" value="com.java.vidigal.code.test.language.LanguageRegistryTest$ApiFetchingTests" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TranslationCacheTest (1)" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="deepl-java" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.java.vidigal.code.test.cache.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.java.vidigal.code.test.cache" />
+      <option name="MAIN_CLASS_NAME" value="com.java.vidigal.code.test.cache.TranslationCacheTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.DeepLPluginExample" />
+        <item itemvalue="JUnit.DeepLPluginTest" />
+        <item itemvalue="JUnit.DeepLClientImplTest (1)" />
+        <item itemvalue="JUnit.LanguageRegistryTest$ApiFetchingTests" />
+        <item itemvalue="JUnit.TranslationCacheTest (1)" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.129" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.129" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="211b1b65-b634-4f39-854d-b23c2fa1dbd2" name="Changes" comment="" />
+      <created>1749817450159</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1749817450159</updated>
+      <workItem from="1749817451098" duration="41762000" />
+      <workItem from="1749952570350" duration="24196000" />
+      <workItem from="1749983952310" duration="966000" />
+      <workItem from="1750149866525" duration="1715000" />
+      <workItem from="1750154217980" duration="6287000" />
+      <workItem from="1750164149905" duration="380000" />
+      <workItem from="1750164679827" duration="1069000" />
+      <workItem from="1750178706906" duration="3634000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/test/java/com/java/vidigal/code/example/DeepLPluginExample.java</url>
+          <line>17</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

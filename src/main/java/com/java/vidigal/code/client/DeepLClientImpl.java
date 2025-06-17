@@ -19,6 +19,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A robust implementation of {@link DeepLClient} for interacting with the DeepL translation API.
@@ -49,6 +52,7 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
     private static final Logger logger = LoggerFactory.getLogger(DeepLClientImpl.class);
     private static final Set<DeepLClientImpl> INSTANCES = ConcurrentHashMap.newKeySet();
     private static final AtomicBoolean SHUTDOWN_HOOK_REGISTERED = new AtomicBoolean(false);
+    private static final String ASYNC_TRANSLATION_FAILED = "Async translation failed";
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final TokenBucketRateLimiter rateLimiter;
@@ -58,7 +62,7 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
     private final AtomicLong totalLatencyNanos = new AtomicLong();
     private final Map<String, AtomicLong> errorTypeCounts = new ConcurrentHashMap<>();
     private final CircuitBreaker circuitBreaker;
-    private volatile DeepLConfig config;
+    private final AtomicReference<DeepLConfig> config = new AtomicReference<>();
     private TranslationCache cache;
 
     /**
@@ -98,7 +102,7 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
         if (config == null) {
             throw new IllegalArgumentException("Configuration cannot be null");
         }
-        this.config = config;
+        this.config.set(config);
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
         this.rateLimiter = new TokenBucketRateLimiter(
@@ -132,13 +136,13 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
      * @param newConfig the new configuration, must not be null
      * @throws IllegalArgumentException if newConfig is null
      */
-    public void reloadConfig(DeepLConfig newConfig) {
+    public void reloadConfig(DeepLConfig newConfig) throws DeepLException {
         if (newConfig == null) {
             logger.error("New configuration cannot be null");
             throw new IllegalArgumentException("New configuration cannot be null");
         }
         synchronized (this) {
-            this.config = newConfig;
+            this.config.set(newConfig);
             this.rateLimiter.update(newConfig.getMaxRequestsPerSecond(), newConfig.getRateLimitCooldown());
             if (newConfig.isCacheEnabled() && this.cache == null) {
                 this.cache = new TranslationCache(
@@ -148,6 +152,14 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
                         newConfig.getPersistentCachePath()
                 );
             } else if (!newConfig.isCacheEnabled() && this.cache != null) {
+                if (newConfig.isPersistentCacheEnabled()) {
+                    try {
+                        Files.deleteIfExists(Path.of(newConfig.getPersistentCachePath()));
+                    } catch (IOException e) {
+                        logger.error("Failed to delete persistent cache file", e);
+                        throw new DeepLException("Failed to delete persistent cache", e);
+                    }
+                }
                 this.cache.clear();
                 this.cache = null;
             }
@@ -155,13 +167,13 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
     }
 
     @Override
-    public TranslationResponse translate(TranslationRequest request) throws DeepLException {
+    public TranslationResponse translate(TranslationRequest request) throws Exception {
         if (circuitBreaker.isOpen()) {
             logger.error("Circuit breaker is open, rejecting request");
             throw new DeepLException("Service temporarily unavailable");
         }
         try {
-            if (config.isCacheEnabled()) {
+            if (config.get().isCacheEnabled()) {
                 TranslationResponse cached = cache.get(
                         String.join("", request.getTextSegments()),
                         request.getTargetLang(),
@@ -186,12 +198,12 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
             failureCount.incrementAndGet();
             incrementErrorCount("InterruptedException");
             throw new DeepLException("Translation interrupted", e);
-        } catch (Exception e) {
+        } catch (DeepLException e) {
             logger.error("Translation failed", e);
             circuitBreaker.recordFailure();
             failureCount.incrementAndGet();
             incrementErrorCount(e.getClass().getSimpleName());
-            throw new DeepLException("Translation failed", e);
+            throw e;
         }
     }
 
@@ -201,7 +213,7 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
             logger.error("Circuit breaker is open, rejecting async request");
             return CompletableFuture.failedFuture(new DeepLException("Service temporarily unavailable"));
         }
-        if (config.isCacheEnabled()) {
+        if (config.get().isCacheEnabled()) {
             TranslationResponse cached = cache.get(
                     String.join("", request.getTextSegments()),
                     request.getTargetLang(),
@@ -228,10 +240,10 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
         try {
             String jsonBody = objectMapper.writeValueAsString(request);
             HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(config.getApiUrl()))
-                    .header("Authorization", "DeepL-Auth-Key " + config.getAuthKey())
+                    .uri(URI.create(config.get().getApiUrl()))
+                    .header("Authorization", "DeepL-Auth-Key " + config.get().getAuthKey())
                     .header("Content-Type", "application/json")
-                    .timeout(Duration.ofMillis(config.getSocketTimeout()))
+                    .timeout(Duration.ofMillis(config.get().getSocketTimeout()))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
                     .build();
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -242,7 +254,7 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
                 throw new DeepLApiException("DeepL API request failed with status: " + response.statusCode(), response.statusCode());
             }
             TranslationResponse translationResponse = objectMapper.readValue(response.body(), TranslationResponse.class);
-            if (config.isCacheEnabled()) {
+            if (config.get().isCacheEnabled()) {
                 cache.put(
                         String.join("", request.getTextSegments()),
                         request.getTargetLang(),
@@ -270,14 +282,14 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
      * @throws Exception if all retries fail or a non-retryable error occurs
      */
     private <T> T executeWithRetry(SupplierWithException<T> supplier) throws Exception {
-        if (!config.isRetryEnabled()) {
+        if (!config.get().isRetryEnabled()) {
             return supplier.get();
         }
         int attempts = 0;
         Exception lastException = null;
         Set<Integer> retryableStatusCodes = Set.of(429, 500, 502, 503);
-        RetryStrategy retryStrategy = config.getRetryStrategy();
-        while (attempts <= config.getMaxRetries()) {
+        RetryStrategy retryStrategy = config.get().getRetryStrategy();
+        while (attempts <= config.get().getMaxRetries()) {
             try {
                 return supplier.get();
             } catch (DeepLApiException e) {
@@ -289,14 +301,18 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
             } catch (IOException e) {
                 lastException = e;
                 logger.error("IO error during request", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Retry execution interrupted", e);
+                throw new DeepLException("Retry execution interrupted", e);
             } catch (Exception e) {
                 logger.error("Non-retryable error", e);
                 throw e;
             }
             attempts++;
-            if (attempts <= config.getMaxRetries()) {
+            if (attempts <= config.get().getMaxRetries()) {
                 long backoff = retryStrategy.getNextDelay(attempts);
-                logger.warn("Retry attempt {}/{} after {}ms", attempts, config.getMaxRetries(), backoff);
+                logger.warn("Retry attempt {}/{} after {}ms", attempts, config.get().getMaxRetries(), backoff);
                 Thread.sleep(backoff);
             }
         }
@@ -322,13 +338,16 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
      * @return a {@link CompletableFuture} containing the translation response
      */
     private CompletableFuture<TranslationResponse> executeWithAsyncRetry(TranslationRequest request, int attempt) {
-        if (!config.isRetryEnabled() || attempt > config.getMaxRetries()) {
+        if (!config.get().isRetryEnabled() || attempt > config.get().getMaxRetries()) {
             return CompletableFuture.supplyAsync(() -> {
                 try {
                     rateLimiter.acquire();
                     return sendRequest(request);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new CompletionException(new DeepLException(ASYNC_TRANSLATION_FAILED, e));
                 } catch (Exception e) {
-                    throw new CompletionException(new DeepLException("Async translation failed", e));
+                    throw new CompletionException(new DeepLException(ASYNC_TRANSLATION_FAILED, e));
                 }
             }, virtualThreadExecutor).thenApply(response -> {
                 circuitBreaker.recordSuccess();
@@ -337,18 +356,21 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
                 circuitBreaker.recordFailure();
                 failureCount.incrementAndGet();
                 incrementErrorCount(throwable.getCause().getClass().getSimpleName());
-                logger.error("Async translation failed", throwable);
-                return CompletableFuture.failedFuture(new DeepLException("Async translation failed", throwable.getCause()));
+                logger.error(ASYNC_TRANSLATION_FAILED, throwable);
+                return CompletableFuture.failedFuture(new DeepLException(ASYNC_TRANSLATION_FAILED, throwable.getCause()));
             });
         }
 
         Set<Integer> retryableStatusCodes = Set.of(429, 500, 502, 503);
-        RetryStrategy retryStrategy = config.getRetryStrategy();
+        RetryStrategy retryStrategy = config.get().getRetryStrategy();
 
         return CompletableFuture.supplyAsync(() -> {
             try {
                 rateLimiter.acquire();
                 return sendRequest(request);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new CompletionException(new DeepLException("Async retry execution interrupted", e));
             } catch (Exception e) {
                 if (e instanceof DeepLApiException apiEx && !retryableStatusCodes.contains(apiEx.getStatusCode())) {
                     logger.error("Non-retryable API error: {}", apiEx.getStatusCode());
@@ -364,9 +386,9 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
             circuitBreaker.recordSuccess();
             return response;
         }).exceptionallyCompose(throwable -> {
-            if (attempt < config.getMaxRetries()) {
+            if (attempt < config.get().getMaxRetries()) {
                 long backoff = retryStrategy.getNextDelay(attempt + 1);
-                logger.warn("Async retry attempt {}/{} after {}ms", attempt + 1, config.getMaxRetries(), backoff);
+                logger.warn("Async retry attempt {}/{} after {}ms", attempt + 1, config.get().getMaxRetries(), backoff);
                 return CompletableFuture.runAsync(() -> {
                         }, CompletableFuture.delayedExecutor(backoff, TimeUnit.MILLISECONDS, virtualThreadExecutor))
                         .thenCompose(v -> executeWithAsyncRetry(request, attempt + 1));
@@ -374,8 +396,8 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
             circuitBreaker.recordFailure();
             failureCount.incrementAndGet();
             incrementErrorCount(throwable.getCause().getClass().getSimpleName());
-            logger.error("All async retries failed", throwable);
-            return CompletableFuture.failedFuture(new DeepLException("All async retries failed", throwable.getCause()));
+            logger.error(ASYNC_TRANSLATION_FAILED, throwable);
+            return CompletableFuture.failedFuture(new DeepLException(ASYNC_TRANSLATION_FAILED, throwable.getCause()));
         });
     }
 
@@ -394,6 +416,7 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
      * @return a {@link MonitoringStats} object with cache, rate limiter, and request statistics
      */
     public MonitoringStats getMonitoringStats() {
+
         CacheMonitoringStats cacheStats = cache != null ? new CacheMonitoringStats(
                 cache.getCacheHits(),
                 cache.getCacheMisses(),
@@ -401,10 +424,14 @@ public class DeepLClientImpl implements DeepLClient, Closeable {
                 cache.getCacheHitRatio(),
                 cache.getAllCache()
         ) : null;
+
         long totalRequests = successCount.get() + failureCount.get();
         double avgLatencyMillis = totalRequests == 0 ? 0 : totalLatencyNanos.get() / (totalRequests * 1_000_000.0);
+
         Map<String, Long> errorCountsSnapshot = new ConcurrentHashMap<>();
+
         errorTypeCounts.forEach((key, value) -> errorCountsSnapshot.put(key, value.get()));
+
         return new MonitoringStats(
                 cacheStats,
                 rateLimiter.getStats(),

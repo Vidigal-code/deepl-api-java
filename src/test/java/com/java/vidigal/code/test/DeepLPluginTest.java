@@ -46,7 +46,7 @@ class DeepLPluginTest {
      * dependencies, and defines mock behavior for translation requests and language validation.
      */
     @BeforeEach
-    void setUp() throws DeepLException {
+    void setUp() throws Exception {
         mocks = MockitoAnnotations.openMocks(this);
         config = DeepLConfig.builder()
                 .apiUrl("https://api-free.deepl.com/v2/translate")

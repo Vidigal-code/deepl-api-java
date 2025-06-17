@@ -15,67 +15,55 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.UnaryOperator;
 
 /**
  * A facade for simplified interaction with the DeepL translation API.
  * <p>
- * This class provides high-level methods for synchronous and asynchronous translations, supporting
- * both single and batch text operations. It integrates with {@link DeepLClient} for API communication,
- * {@link LanguageRegistry} for language validation, and supports caching and monitoring features.
- * The plugin ensures proper resource management and validation, using SLF4J for logging errors and
- * debug information.
+ * Provides high-level methods for synchronous and asynchronous translations, supporting single and
+ * batch text operations. Integrates with {@link DeepLClient} for API communication,
+ * {@link LanguageRegistry} for language validation, and supports caching and monitoring.
+ * Ensures proper resource management and validation, using SLF4J for logging.
  * </p>
- * <p>
- * <h3>Usage Example:</h3>
+ * <h3>Example Usage:</h3>
  * <pre>{@code
  * DeepLPlugin plugin = new DeepLPlugin("https://api.deepl.com/v2/translate", "your-auth-key");
  * String translated = plugin.translateText("Bonjour", "EN", "FR");
  * System.out.println(translated); // Outputs: "Hello"
  * plugin.shutdown();
  * }</pre>
- * </p>
  *
  * @author Vidigal
  * @version 1.0
- * @see DeepLClient
- * @see DeepLConfig
- * @see LanguageRegistry
  * @since 1.0
  */
 public class DeepLPlugin {
 
     private static final Logger logger = LoggerFactory.getLogger(DeepLPlugin.class);
     private static final int MAX_BATCH_SIZE = 50;
+    private static final String TEXT_NOT_NULL_OR_EMPTY = "Text to translate must not be null or empty";
+    private static final String TARGET_LANG_NOT_NULL_OR_EMPTY = "Target language must not be null or empty";
+    private static final String TEXT_BATCH_NOT_NULL_OR_EMPTY = "Text batch to translate must not be null or empty";
+    private static final UnaryOperator<String> TO_LOWER_CASE = String::toLowerCase;
     private final DeepLClient client;
     private final LanguageRegistry languageRegistry;
 
-
     /**
-     * Constructs a {@code DeepLPlugin} instance with the specified API URL and authentication key.
-     * <p>
-     * This constructor creates a default {@link DeepLConfig} with the provided API URL and authentication
-     * key, and initializes a {@link LanguageRegistry} for language validation.
-     * </p>
+     * Constructs a {@code DeepLPlugin} with the specified API URL and authentication key.
      *
      * @param apiUrl  the DeepL API endpoint URL (e.g., "https://api.deepl.com/v2/translate")
-     * @param authKey the authentication key for accessing the DeepL API
+     * @param authKey the authentication key for the DeepL API
      * @throws IllegalArgumentException if {@code apiUrl} or {@code authKey} is null or empty
      */
     public DeepLPlugin(String apiUrl, String authKey) {
         this(DeepLConfig.builder().apiUrl(apiUrl).authKey(authKey).build(), new LanguageRegistry());
     }
 
-
     /**
-     * Constructs a {@code DeepLPlugin} instance with a custom configuration and language registry.
-     * <p>
-     * This constructor allows for a fully customized {@link DeepLConfig} and an optional
-     * {@link LanguageRegistry}. If the provided {@code languageRegistry} is null, a new
-     * {@code LanguageRegistry} instance is created.
-     * </p>
+     * Constructs a {@code DeepLPlugin} with a custom configuration and language registry.
      *
      * @param config           the configuration for the DeepL client
-     * @param languageRegistry the registry for validating supported languages, or null to use a default registry
+     * @param languageRegistry the registry for validating supported languages, or null for default
      * @throws IllegalArgumentException if {@code config} is null
      */
     public DeepLPlugin(DeepLConfig config, LanguageRegistry languageRegistry) {
@@ -87,13 +75,8 @@ public class DeepLPlugin {
         this.languageRegistry = languageRegistry != null ? languageRegistry : new LanguageRegistry();
     }
 
-
     /**
-     * Constructs a {@code DeepLPlugin} instance with a custom configuration.
-     * <p>
-     * This constructor uses the provided {@link DeepLConfig} and creates a default
-     * {@link LanguageRegistry} for language validation.
-     * </p>
+     * Constructs a {@code DeepLPlugin} with a custom configuration.
      *
      * @param config the configuration for the DeepL client
      * @throws IllegalArgumentException if {@code config} is null
@@ -102,259 +85,262 @@ public class DeepLPlugin {
         this(config, new LanguageRegistry());
     }
 
-
     /**
-     * Translates a single text to the specified target language with automatic source language detection.
-     * <p>
-     * This method is a convenience wrapper around {@link #translateText(String, String, String)},
-     * with the source language set to null for auto-detection.
-     * </p>
+     * Translates a single text to the target language with auto-detected source language.
      *
      * @param text       the text to translate
      * @param targetLang the target language code (e.g., "EN", "FR")
      * @return the translated text
-     * @throws DeepLException           if the translation fails or the target language is unsupported
-     * @throws InterruptedException     if the operation is interrupted
-     * @throws IllegalArgumentException if {@code text} is null or empty, or {@code targetLang} is invalid
+     * @throws DeepLException           if translation fails or target language is unsupported
+     * @throws IllegalArgumentException if {@code text} or {@code targetLang} is invalid
      */
-    public String translate(String text, String targetLang) throws DeepLException, InterruptedException {
+    public String translate(String text, String targetLang) throws Exception {
         return translateText(text, targetLang, null);
     }
 
-
     /**
-     * Translates a single text to the specified target language with automatic source language detection.
-     * <p>
-     * This method is equivalent to {@link #translate(String, String)} and is provided for API consistency.
-     * </p>
+     * Translates a single text to the target language with auto-detected source language.
      *
      * @param text       the text to translate
      * @param targetLang the target language code (e.g., "EN", "FR")
      * @return the translated text
-     * @throws DeepLException           if the translation fails or the target language is unsupported
-     * @throws InterruptedException     if the operation is interrupted
-     * @throws IllegalArgumentException if {@code text} is null or empty, or {@code targetLang} is invalid
+     * @throws DeepLException           if translation fails or target language is unsupported
+     * @throws IllegalArgumentException if {@code text} or {@code targetLang} is invalid
      */
-    public String translateText(String text, String targetLang) throws DeepLException, InterruptedException {
+    public String translateText(String text, String targetLang) throws Exception {
         return translateText(text, targetLang, null);
     }
 
-
     /**
-     * Translates a single text to the specified target language, optionally specifying the source language.
-     * <p>
-     * This method validates the input text and languages, builds a translation request, and sends it to
-     * DeepL API via the {@link DeepLClient}. If {@code sourceLang} is null or empty, the source language is
-     * automatically detected by the DeepL API.
-     *
-     * <h4>Example Usage:</h4>
-     * <pre>{@code
-     * DeepLPlugin plugin = new DeepLPlugin("https://api.deepl.com/v2/translate", "your-auth-key");
-     * String translated = plugin.translateText("Hola mundo", "EN", "ES");
-     * targetLang the target language code (e.g., "EN", "FR")
-     * System.out.println(translated); // Outputs: "Hello world"
-     * }</pre>
-     * </p>
+     * Translates a single text to the target language, optionally specifying the source language.
      *
      * @param text       the text to translate
      * @param targetLang the target language code (e.g., "EN", "FR")
-     * @param sourceLang the source language code (optional, e.g., "EN", "FR"), or null for auto-detection
+     * @param sourceLang the source language code (e.g., "EN", "FR"), or null for auto-detection
      * @return the translated text
-     * @throws DeepLException           if the translation fails or the languages are unsupported
-     * @throws InterruptedException     if the operation is interrupted
-     * @throws IllegalArgumentException if {@code text} is null or empty, or languages are invalid
+     * @throws DeepLException           if translation fails or languages are unsupported
+     * @throws IllegalArgumentException if {@code text} or {@code targetLang} is invalid
      */
-    public String translateText(String text, String targetLang, String sourceLang) throws DeepLException, InterruptedException {
+    public String translateText(String text, String targetLang, String sourceLang) throws Exception {
+        validateInputs(text, targetLang);
         validateLanguage(targetLang, sourceLang);
+
         TranslationRequestBuilder builder = new TranslationRequestBuilder()
                 .addText(text)
-                .setTargetLang(targetLang);
-        if (sourceLang != null && !sourceLang.isBlank()) {
-            builder.setSourceLang(sourceLang);
-        }
+                .setTargetLang(targetLang)
+                .setSourceLang(sourceLang != null && !sourceLang.isBlank() ? sourceLang : null);
+
         TranslationResponse response = client.translate(builder.build());
-        return response.getTranslations().getFirst().getText();
+        List<Translation> translations = response.getTranslations();
+
+        if (translations == null || translations.isEmpty()) {
+            logger.error("No translations returned for text: {}", text);
+            throw new DeepLException("No translations returned");
+        }
+
+        String translatedText = translations.getFirst().getText();
+        logger.debug("Translated text to {}: {}", targetLang, translatedText);
+        return translatedText;
     }
 
-
     /**
-     * Translates a batch of texts to the specified target language, optionally specifying the source language.
-     * <p>
-     * This method supports translating up to  texts in a single request. It validates
-     * input texts and ensures the batch size does not exceed the maximum limit. If {@code sourceLang} is
-     * null or empty, the source language is are automatically detected by the DeepL API.
-     *
-     * <h4>Example Usage:</h4>
-     * <pre>{code
-     * DeepLcode example
-     * DeepLPlugin plugin = new DeepLPlugin("https://api.deepl.com/v2/translatete", "your-auth-key");
-     * List<String> texts = translations.List.of("Bonjour", "Merci");
-     * String translatedText = plugin.translateText("Hello World", "EN", targetLang);
-     * List<String> translations = translations.translateBatch(texts, "EN", "FR");
-     * System.out.println(translations); // Outputs: ["Hello", "Thank you"]
-     * }</pre>
-     * </p>
+     * Translates a batch of texts to the target language, optionally specifying the source language.
      *
      * @param texts      the list of texts to translate
      * @param targetLang the target language code (e.g., "EN", "FR")
-     * @param sourceLang the sourceLang the source language code (optional, e.g., "EN", "FR"), optional or null for auto-detection
-     * @return a list of translated texts in the order of the input texts
-     * @throws DeepLException           if the translation fails or the languages are invalid
-     * @throws InterruptedException     if the operation is interrupted
-     * @throws IllegalArgumentException if {@code texts} is null, empty, empty or exceeds {@code MAX_BATCH_SIZE}, or if languages are invalid
+     * @param sourceLang the source language code (e.g., "EN", "FR"), or null for auto-detection
+     * @return a list of translated texts in the order of input texts
+     * @throws DeepLException           if translation fails or languages are invalid
+     * @throws IllegalArgumentException if {@code texts} or {@code targetLang} is invalid
      */
-    public List<String> translateBatch(List<String> texts, String targetLang, String sourceLang) throws DeepLException, InterruptedException {
+    public List<String> translateBatch(List<String> texts, String targetLang, String sourceLang) throws Exception {
+        validateBatchInputs(texts, targetLang);
         validateLanguage(targetLang, sourceLang);
-        if (texts.size() > MAX_BATCH_SIZE) {
-            logger.error("Batch size {} exceeds maximum: {}", texts.size(), MAX_BATCH_SIZE);
-            throw new IllegalArgumentException("Batch size exceeds maximum of " + MAX_BATCH_SIZE);
-        }
-        TranslationRequestBuilder builder = new TranslationRequestBuilder().setTargetLang(targetLang);
-        if (sourceLang != null && !sourceLang.isBlank()) {
-            builder.setSourceLang(sourceLang);
-        }
+
+        TranslationRequestBuilder builder = new TranslationRequestBuilder()
+                .setTargetLang(targetLang)
+                .setSourceLang(sourceLang != null && !sourceLang.isBlank() ? sourceLang : null);
+
         for (String text : texts) {
             builder.addText(text);
         }
+
         TranslationResponse response = client.translate(builder.build());
-        return response.getTranslations().stream().map(Translation::getText).toList();
+
+        List<Translation> translations = response.getTranslations();
+        if (translations == null || translations.size() != texts.size()) {
+            logger.error("Invalid translation count: expected {}, got {}", texts.size(), translations == null ? 0 : translations.size());
+            throw new DeepLException("Invalid translation count");
+        }
+
+
+        List<String> translatedTexts = translations.stream().map(Translation::getText).toList();
+        logger.debug("Translated batch of {} texts to {}", texts.size(), targetLang);
+        return translatedTexts;
     }
 
-
     /**
-     * Asynchronously translates a single text to the specified target language with automatic source
-     * <p>
-     * This method is a convenience wrapper around {@link #translateTextAsync(String, String, String)},
-     * with the source language set to null for auto-detection.
-     * </p>
+     * Asynchronously translates a single text to the target language with auto-detected source language.
      *
+     * @param text       the text to translate
      * @param targetLang the target language code (e.g., "EN", "FR")
      * @return a {@code CompletableFuture} resolving to the translated text
      * @throws DeepLException           if the target language is invalid
-     * @throws IllegalArgumentException if {@code text} is null or empty, or {@code targetLang} is invalid
+     * @throws IllegalArgumentException if {@code text} or {@code targetLang} is invalid
      */
-    public CompletableFuture<String> translateTextAsync(String text, String targetLang) throws DeepLException {
+    public CompletableFuture<String> translateTextAsync(String text, String targetLang) throws Exception {
         return translateTextAsync(text, targetLang, null);
     }
 
-
     /**
-     * Asynchronously translates a a single text to the specified target language, optionally specifying the source language.
-     * <p>
-     * This method asynchronously builds a translation request asynchronously and sends it to the DeepL API via the
-     * DeepLClient}. If {@code sourceLang} is null or empty, source language the source language is automatically
-     * detected by the DeepL API.
-     *
-     * <h4>Example usage:
-     * <pre>{code
-     * DeepLcode example
-     * DeepLPlugin plugin = new DeepLPlugin("https://api.deepl.com/v2/translate", "your-auth-key");
-     * plugin.translateTextAsync("Ciao", "EN", "IT").thenAccept(System.out::out.println);
-     * // Outputs: "Hello" when when completed
-     * </pre>
-     * </p>
+     * Asynchronously translates a single text to the target language, optionally specifying the source language.
      *
      * @param text       the text to translate
      * @param targetLang the target language code (e.g., "EN", "FR")
-     * @param sourceLang the source language code (optional), source e.g., "FR"), or null for auto-detection
+     * @param sourceLang the source language code (e.g., "FR"), or null for auto-detection
      * @return a {@code CompletableFuture} resolving to the translated text
-     * @throws DeepLException           if the languages are invalid
-     * @throws IllegalArgumentException if {@code text} is null or empty, or languages are invalid
+     * @throws DeepLException           if languages are invalid
+     * @throws IllegalArgumentException if {@code text} or {@code targetLang} is invalid
      */
-    public CompletableFuture<String> translateTextAsync(String text, String targetLang, String sourceLang) throws DeepLException {
+    public CompletableFuture<String> translateTextAsync(String text, String targetLang, String sourceLang) throws Exception {
+        validateInputs(text, targetLang);
         validateLanguage(targetLang, sourceLang);
+
         TranslationRequestBuilder builder = new TranslationRequestBuilder()
                 .addText(text)
-                .setTargetLang(targetLang);
-        if (sourceLang != null && !sourceLang.isBlank()) {
-            builder.setSourceLang(sourceLang);
-        }
+                .setTargetLang(targetLang)
+                .setSourceLang(sourceLang != null && !sourceLang.isBlank() ? sourceLang : null);
+
         return client.translateAsync(builder.build())
-                .thenApply(response -> response.getTranslations().getFirst().getText());
+                .thenApply(response -> {
+                    List<Translation> translations = response.getTranslations();
+                    if (translations == null || translations.isEmpty()) {
+                        logger.error("No translations returned for text: {}", text);
+                        try {
+                            logger.error("Translated text to {}: {}", targetLang, text);
+                            throw new DeepLException("No translations returned");
+                        } catch (DeepLException e) {
+                            logger.error(e.getMessage());
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    String translatedText = translations.getFirst().getText();
+                    logger.debug("Translated text to {}: {}", targetLang, translatedText);
+                    return translatedText;
+                });
+
     }
 
-
     /**
-     * Asynchronously translates a batch of texts to the specified target language, optionally specifying
-     * source language.
-     * <p>
-     * This method supports translating up to {@code MAX_BATCH_SIZE} texts in a single request. It validates
-     * input texts and ensures the batch size does not exceed the limit. If {@code sourceLang} is null or empty,
-     * source language the source language is automatically detected by the DeepL API.
-     *
-     * <h4>Example Usage:</h4>
-     * <pre>{code
-     * DeepL code example
-     * DeepLPlugin plugin = new DeepLPlugin("https://api.deepl.com/v2/translate", "your-api-key");
-     * List<String> texts = translations.List.of("Guten Tag", "Danke");
-     * String translatedText = plugin.translate("Hello World", targetLang);
-     * plugin.translateBatchAsync(texts, "EN", "DE").thenAccept(System.out::out.println);
-     * // Outputs: ["Good day", translations "Thank you"] when completed
-     * String translatedText = plugin.translate(targetLang);
-     * </pre>
-     * </p>
+     * Asynchronously translates a batch of texts to the target language, optionally specifying the source language.
      *
      * @param texts      the list of texts to translate
      * @param targetLang the target language code (e.g., "EN", "DE")
-     * @param sourceLang the source language code (optional, e.g., "DE"), or null for auto-detection
+     * @param sourceLang the source language code (e.g., "DE"), or null for auto-detection
      * @return a {@code CompletableFuture} resolving to a list of translated texts
-     * @throws DeepLException           if the languages are invalid
-     * @throws IllegalArgumentException if {@code texts} is null, empty, or exceeds {@code MAX_X_SIZE}, or if
-     *                                  languages are invalid
+     * @throws DeepLException           if languages are invalid
+     * @throws IllegalArgumentException if {@code texts} or {@code targetLang} is invalid
      */
-    public CompletableFuture<List<String>> translateBatchAsync(List<String> texts, String targetLang, String sourceLang) throws DeepLException {
+    public CompletableFuture<List<String>> translateBatchAsync(List<String> texts, String targetLang, String sourceLang) throws Exception {
+        validateBatchInputs(texts, targetLang);
         validateLanguage(targetLang, sourceLang);
-        if (texts.size() > MAX_BATCH_SIZE) {
-            logger.error("Batch size {} exceeds maximum: {}", texts.size(), MAX_BATCH_SIZE);
-            throw new IllegalArgumentException("Batch size exceeds maximum of " + MAX_BATCH_SIZE);
-        }
-        TranslationRequestBuilder builder = new TranslationRequestBuilder().setTargetLang(targetLang);
-        if (sourceLang != null && !sourceLang.isBlank()) {
-            builder.setSourceLang(sourceLang);
-        }
+
+        TranslationRequestBuilder builder = new TranslationRequestBuilder()
+                .setTargetLang(targetLang)
+                .setSourceLang(sourceLang != null && !sourceLang.isBlank() ? sourceLang : null);
+
         for (String text : texts) {
             builder.addText(text);
         }
+
         return client.translateAsync(builder.build())
-                .thenApply(response -> response.getTranslations().stream()
-                        .map(Translation::getText)
-                        .toList())
+                .thenApply(response -> {
+                    List<Translation> translations = response.getTranslations();
+                    if (translations == null || translations.size() != texts.size()) {
+                        logger.error("Invalid translation count: expected {}, got {}", texts.size(), translations == null ? 0 : translations.size());
+                        try {
+                            logger.error("Translated batch of {} texts to {}", texts.size(), targetLang);
+                            throw new DeepLException("Invalid translation count");
+                        } catch (DeepLException e) {
+                            try {
+                                logger.error(e.getMessage());
+                                throw new RuntimeException(e);
+                            } catch (RuntimeException ex) {
+                                logger.error(ex.getMessage());
+                                throw new RuntimeException(ex);
+                            }
+                        }
+                    }
+                    List<String> translatedTexts = translations.stream().map(Translation::getText).toList();
+                    logger.debug("Translated batch of {} texts to {}", texts.size(), targetLang);
+                    return translatedTexts;
+                })
                 .exceptionallyCompose(throwable -> {
                     logger.error("Async batch translation failed", throwable);
                     return CompletableFuture.failedFuture(new DeepLException("Async batch translation failed", throwable.getCause()));
                 });
     }
 
+    /**
+     * Validates input text and target language.
+     *
+     * @param text       the text to validate
+     * @param targetLang the target language code to validate
+     * @throws IllegalArgumentException if inputs are invalid
+     */
+    private void validateInputs(String text, String targetLang) {
+        if (text == null || text.isBlank()) {
+            logger.error(TEXT_NOT_NULL_OR_EMPTY);
+            throw new IllegalArgumentException(TEXT_NOT_NULL_OR_EMPTY);
+        }
+        if (targetLang == null || targetLang.isBlank()) {
+            logger.error(TARGET_LANG_NOT_NULL_OR_EMPTY);
+            throw new IllegalArgumentException(TARGET_LANG_NOT_NULL_OR_EMPTY);
+        }
+    }
 
     /**
-     * Validates the specified target and source languages using the LanguageRegistry.
-     * <p>
-     * Throws an exception if the target language is unsupported, or if the source language is non-null,
-     * non-empty, and unsupported.
-     * </p>
+     * Validates batch input texts and target language.
      *
-     * @param targetLang the target language code (e.g., "EN", targetLang "FR")
-     * @param sourceLang the source language code (optional, e.g., "FR"), or null for auto-detection
-     * @throws DeepLException if either language is unsupported
+     * @param texts      the list of texts to validate
+     * @param targetLang the target language code to validate
+     * @throws IllegalArgumentException if inputs are invalid
+     */
+    private void validateBatchInputs(List<String> texts, String targetLang) {
+        if (texts == null || texts.isEmpty()) {
+            logger.error(TEXT_BATCH_NOT_NULL_OR_EMPTY);
+            throw new IllegalArgumentException(TEXT_BATCH_NOT_NULL_OR_EMPTY);
+        }
+        if (targetLang == null || targetLang.isBlank()) {
+            logger.error(TARGET_LANG_NOT_NULL_OR_EMPTY);
+            throw new IllegalArgumentException(TARGET_LANG_NOT_NULL_OR_EMPTY);
+        }
+        if (texts.size() > MAX_BATCH_SIZE) {
+            logger.error("Batch size {} exceeds maximum: {}", texts.size(), MAX_BATCH_SIZE);
+            throw new IllegalArgumentException("Batch size exceeds maximum of " + MAX_BATCH_SIZE);
+        }
+    }
+
+    /**
+     * Validates the target and source languages using the LanguageRegistry.
+     *
+     * @param targetLang the target language code (e.g., "EN", "FR")
+     * @param sourceLang the source language code (e.g., "FR"), or null for auto-detection
+     * @throws DeepLException if languages are unsupported
      */
     private void validateLanguage(String targetLang, String sourceLang) throws DeepLException {
-        if (!languageRegistry.isSupported(targetLang)) {
+        if (!languageRegistry.isSupported(TO_LOWER_CASE.apply(targetLang))) {
             logger.error("Unsupported target language: {}", targetLang);
             throw new DeepLException("Unsupported target language: " + targetLang);
         }
-        if (sourceLang != null && !sourceLang.isBlank() && !languageRegistry.isSupported(sourceLang)) {
+        if (sourceLang != null && !sourceLang.isBlank() && !languageRegistry.isSupported(TO_LOWER_CASE.apply(sourceLang))) {
             logger.error("Unsupported source language: {}", sourceLang);
             throw new DeepLException("Unsupported source language: " + sourceLang);
         }
     }
 
-
     /**
      * Retrieves the underlying DeepL client instance.
-     * <p>
-     * This method is primarily intended for internal use or debugging. Use with caution, as
-     * exposes direct access to the internal client exposes internal implementation details.
-     * </p>
      *
      * @return the DeepLClient instance
      */
@@ -362,12 +348,8 @@ public class DeepLPlugin {
         return client;
     }
 
-
     /**
-     * Retrieves all cache entries entries from the translation cache, if if available.
-     * <p>
-     * Returns an empty list if caching is disabled or no cache is configured. This method is
-     * primarily intended for debugging or monitoring purposes.
+     * Retrieves all cache entries from the translation cache, if available.
      *
      * @return a list of cache entries, or an empty list if no cache is available
      */
@@ -379,13 +361,8 @@ public class DeepLPlugin {
         return List.of();
     }
 
-
     /**
-     * Retrieves monitoring statistics for the DeepL client, if if available.
-     * <p>
-     * Returns null if the underlying client is not a {@code DeepLClientImpl} instance or if monitoring is not
-     * enabled. This is method primarily is primarily intended for debugging or monitoring.
-     * </p>
+     * Retrieves monitoring statistics for the DeepL client, if available.
      *
      * @return monitoring statistics, or null if unavailable
      */
@@ -397,13 +374,8 @@ public class DeepLPlugin {
         return null;
     }
 
-
     /**
      * Shuts down all resources associated with the DeepL client.
-     * <p>
-     * This method closes the underlying client, releasing resources such as HTTP connections and
-     * thread pools. It should be called when the plugin is no longer needed to avoid resource leaks.
-     * </p>
      */
     public void shutdown() {
         if (client instanceof DeepLClientImpl impl) {
@@ -415,13 +387,8 @@ public class DeepLPlugin {
         }
     }
 
-
     /**
-     * Clears the translation cache if, it clear is cache available.
-     * <p>
-     * This method has no effect if caching is disabled or no cache is configured. It is useful
-     * for resetting the cache during testing or maintenance.
-     * </p>
+     * Clears the translation cache, if available.
      */
     public void clearCache() {
         if (client instanceof DeepLClientImpl impl && impl.getCache() != null) {
@@ -430,5 +397,4 @@ public class DeepLPlugin {
             logger.debug("No cache available to clear");
         }
     }
-
 }

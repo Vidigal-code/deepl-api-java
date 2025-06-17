@@ -24,7 +24,7 @@ public interface DeepLClient {
      * @return the translation response from the API
      * @throws DeepLException if the translation fails due to API or network issues
      */
-    TranslationResponse translate(TranslationRequest request) throws DeepLException;
+    TranslationResponse translate(TranslationRequest request) throws Exception;
 
     /**
      * Translates text asynchronously using the DeepL API with virtual threads.
